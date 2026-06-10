@@ -1,0 +1,18 @@
+# Google Sheets datastore
+gspread>=6.0.0
+google-auth>=2.28.0
+google-auth-oauthlib>=1.2.0
+
+# LLM (categorizer + Q&A agent)
+openai>=1.30.0
+
+# Excel/CSV ingestion
+pandas>=2.2.0
+openpyxl>=3.1.0
+
+# CLI
+click>=8.1.0
+python-dotenv>=1.0.0
+
+# Tests
+pytest>=8.0.0

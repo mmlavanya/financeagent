@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+# Run tests from the repo root so `from finance import ...` and `from cli import cli` resolve.
+pythonpath = ["."]
+testpaths = ["tests"]

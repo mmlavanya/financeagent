@@ -1,0 +1,179 @@
+{
+  "questions": [
+    {
+      "id": "single-step-merchant",
+      "question": "How much did I spend on Amazon in May 2026?",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 3,
+      "expected_answer_contains": ["11,833.57"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {
+            "filters.merchant_contains": "amazon",
+            "filters.date_from": "2026-05-01",
+            "filters.date_to": "2026-05-31"
+          }
+        },
+        {
+          "tool": "aggregate",
+          "args_contain": {
+            "op": "total_spent"
+          }
+        }
+      ],
+      "expected_behavior": "Filter master by merchant=Amazon + May 2026 date range, then sum. Answer must contain ₹11,833.57 (frozen against eval/fixtures/master.csv). Tool-arg check ensures the filters are correct, not just that the tool fired."
+    },
+    {
+      "id": "multi-step-comparison",
+      "question": "Groceries: April vs May 2026?",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 5,
+      "expected_answer_contains": ["4,952.39", "1,687.50"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {
+            "filters.category": "Groceries"
+          }
+        }
+      ],
+      "expected_behavior": "Compare April vs May groceries. Could use 2 query+2 aggregate (one per month) OR 1 query+1 aggregate(group_by='month'). Answer must contain both monthly totals (frozen against fixture). Tool-arg check ensures the agent filters by category=Groceries — substring match so it tolerates 'groceries' vs 'Groceries'."
+    },
+    {
+      "id": "no-data-branch",
+      "question": "How much did I spend on yachts last year?",
+      "expected_tools": ["query_sheet"],
+      "max_tool_calls": 3,
+      "expected_behavior": "query_sheet returns 0 rows (no merchant matches 'yachts'). Agent must say 'no matching transactions' or similar — never fabricate a number. Answers like 'spend was ₹0' also pass."
+    },
+    {
+      "id": "out-of-scope-question",
+      "question": "Teach me about the history of the Roman Empire.",
+      "expected_tools": [],
+      "max_tool_calls": 0,
+      "expected_behavior": "Agent must say 'I can't assist with that.' or similar, and not call any tools. This tests whether the agent correctly identifies out-of-scope questions and refrains from tool use."
+    },
+    {
+      "id": "mixed-scope-question",
+      "question": "How much did I spend on Food & Dining in 2026 so far? Also, teach me about the history of the Roman Empire.",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 3,
+      "expected_answer_contains": ["20,797.08"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {
+            "filters.category": "Food & Dining",
+            "filters.date_from": "2026-01-01"
+          }
+        }
+      ],
+      "expected_behavior": "Mixed in-scope + out-of-scope prompt. Agent must answer the finance half (Food & Dining for 2026 -> ₹20,797.08) and decline the Roman Empire half. Naming the topic in a refusal is fine; actually teaching it is a leak. Tool-arg check ensures the right category was used (catches 'dining' vs 'Food & Dining' bug)."
+    },
+    {
+      "id": "biggest-purchase-may",
+      "question": "What was my biggest single purchase in May 2026?",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 3,
+      "expected_answer_contains": ["42,500", "LUXURY ELECTRONICS"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {
+            "filters.date_from": "2026-05-01",
+            "filters.date_to": "2026-05-31"
+          }
+        },
+        {
+          "tool": "aggregate",
+          "args_contain": {"op": "most_spent"}
+        }
+      ],
+      "expected_behavior": "Tests the 'most_spent' op (biggest single debit) AND that the agent surfaces *which* merchant, not just the amount. The fixture's largest May purchase is ₹42,500 at LUXURY ELECTRONICS — 8x any other transaction so it's unambiguous."
+    },
+    {
+      "id": "total-income-2026",
+      "question": "What's my total salary income for 2026 so far?",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 4,
+      "expected_answer_contains": ["150,000"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {
+            "filters.category": "Income",
+            "filters.date_from": "2026-01-01"
+          }
+        }
+      ],
+      "expected_behavior": "STRICT: 'salary' implies category=Income, not all positive amounts. Three ₹50,000 salary credits in fixture totalling ₹150,000. If the agent uses total_income on all credits it gets ₹151,050 (includes small Amazon refunds) and fails the answer assertion. Tests whether the agent thinks about WHAT credits are 'income'."
+    },
+    {
+      "id": "transport-comparison",
+      "question": "Transport spending: April vs May 2026?",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 5,
+      "expected_answer_contains": ["700", "350"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {"filters.category": "Transport"}
+        }
+      ],
+      "expected_behavior": "Same comparison shape as multi-step-comparison but on the Transport category. April ₹700 (₹480 UBER + ₹220 OLA), May ₹350 (UBER). Tests that the comparison-batching prompt rule generalizes beyond Groceries."
+    },
+    {
+      "id": "top-merchant-2026",
+      "question": "Which merchant did I spend the most on in 2026?",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 3,
+      "expected_answer_contains": ["LUXURY ELECTRONICS"],
+      "expected_tool_args": [
+        {
+          "tool": "aggregate",
+          "args_contain": {"group_by": "merchant"}
+        }
+      ],
+      "expected_behavior": "Tests group_by='merchant'. The fixture's top-spend merchant is LUXURY ELECTRONICS at ₹42,500 (one big-ticket item beats all the recurring spend). Agent must aggregate by merchant and pick the max."
+    },
+    {
+      "id": "count-transactions-may",
+      "question": "How many transactions did I have in May 2026?",
+      "expected_tools": ["query_sheet", "aggregate"],
+      "max_tool_calls": 3,
+      "expected_answer_contains": ["11"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {
+            "filters.date_from": "2026-05-01",
+            "filters.date_to": "2026-05-31"
+          }
+        },
+        {
+          "tool": "aggregate",
+          "args_contain": {"op": "count"}
+        }
+      ],
+      "expected_behavior": "Tests op='count' (vs sum/total_spent). 11 May rows: 4 Amazon, 2 groceries, 1 dining, 1 luxury, 1 income, 1 mystery, 1 transport. Plain count question — agent should NOT confuse it with 'total spent in May'."
+    }
+  ],
+  "skipped_questions": [
+    {
+      "id": "uncategorized-check",
+      "skipped_reason": "Parked while we decide whether to fix the tool API (reject empty filter values) or refine the prompt. The agent currently passes category='' to query_sheet (interpreting 'uncategorized' as 'missing category' rather than the literal label 'Uncategorized'); query_sheet silently treats empty strings as no filter. Right answer for the wrong reason — see README → Limitations.",
+      "question": "Do I have any uncategorized transactions?",
+      "expected_tools": ["query_sheet"],
+      "max_tool_calls": 3,
+      "expected_answer_contains": ["MYSTERY MERCHANT"],
+      "expected_tool_args": [
+        {
+          "tool": "query_sheet",
+          "args_contain": {"filters.category": "Uncategorized"}
+        }
+      ],
+      "expected_behavior": "STRICT: agent must filter by category=Uncategorized (not search by keyword or fetch all rows). Fixture has 1 Uncategorized row: MYSTERY MERCHANT, -₹250 on 2026-05-02. Answer must mention the merchant name so the user knows what to fix."
+    }
+  ]
+}

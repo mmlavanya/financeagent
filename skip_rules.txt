@@ -1,0 +1,12 @@
+# skip_rules.txt — patterns that exclude rows from the master tab.
+#
+# Lines starting with '#' are comments.
+# Each non-empty line is a case-insensitive substring matched against the
+# merchant column. A row is skipped from `master` if its merchant contains
+# ANY listed pattern.
+#
+# Skipped rows still go to the per-source audit tab (e.g. axis_card),
+# so nothing is lost — only the master tab is filtered.
+
+BBPS
+Payment Received

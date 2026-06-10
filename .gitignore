@@ -1,0 +1,39 @@
+# Secrets — never commit
+credentials.json
+token.json
+.env
+
+# Personal financial data — never commit
+*.xlsx
+*.xls
+*.csv
+
+# Eval fixtures are synthetic test data — safe and required to commit so
+# anyone cloning the repo can run `python cli.py eval` reproducibly.
+!eval/fixtures/master.csv
+!eval/fixtures/rules.csv
+
+# Eval run traces are local artifacts; not committed (may contain real data
+# if the user pointed --fixture-dir at a private snapshot).
+eval/runs/
+
+# Personal planning artifacts — kept on disk for the author, not shipped.
+# The committed system-design doc (docs/family-financial-tracker-system-design.md)
+# is the authoritative reference.
+docs/family-financial-tracker-5day-plan.md
+PROJECT_STATUS.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
